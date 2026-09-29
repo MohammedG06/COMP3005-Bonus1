@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+results.csv
+loglog.png
+data/gen.ra
