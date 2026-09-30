@@ -200,8 +200,17 @@ messages can name exactly what was expected at the position where parsing failed
 
 ## 5.5 Sources
 
-**TODO before submitting (write these yourself, they must be true):**
+I read the Wikipedia article on maximal munch while working on the tokenizer. It explains
+that when a scanner reads a character and multiple different tokens could start with it, the
+scanner should always consume the longest possible match before deciding what token it found.
+This is exactly why `tokenizer.py` handles `>` the way it does: on seeing `>`, it looks at the
+very next character before deciding whether the token is `>` or `>=` — if it stopped after just
+`>`, an input like `Age>=30` would wrongly become the two tokens `>` and `=30` instead of one
+`>=` token. The same rule is why `Age>-30` correctly becomes `Age`, `>`, `-30`: `-` only starts
+a number when a digit immediately follows it, so the scanner doesn't try to munch `>` and `-`
+together into some invalid `>-` operator.
 
-* What I actually read (for example: Crafting Interpreters chapters on scanning and parsing,
-  Wikipedia on EBNF, recursive descent, maximal munch, operator precedence, Dragon Book 2.2 to 2.4).
-* Where the AI was wrong or incomplete while I worked. See also DESIGN_LOG.md.
+Where AI assistance was wrong: see DESIGN_LOG.md. The clearest example was the runtime
+estimate for the largest join (64000 x 64000) — before any code existed, Claude predicted this
+could take "hours" in Python; the actual measured time on my own machine was about 17 minutes
+(1029.7 s), which I only found out by actually running `benchmark.py` myself.

@@ -73,3 +73,6 @@ so "an employee joined with their manager" cannot be written.
 * Keywords must be lowercase. Numbers are int or float; `3` and `3.0` are equal.
 * Relation files need one tuple per line and `{` on the header line.
 * Pure Python is slow for the largest join (4.1 billion comparisons at 64000 x 64000).
+* No unary minus operator: a `-` is only recognized as part of a negative number literal
+  (e.g. `-30`), and only when a digit follows it immediately. There is no way to write a
+  general negation like `--5` or `-(x)` in a query.

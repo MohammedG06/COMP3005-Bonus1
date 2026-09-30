@@ -25,16 +25,40 @@ All 25 required cases plus extras were turned into `tests/test_cases.py` and pas
 
 **What broke / still open:**
 
-* (fill in: anything that broke when I ran or changed the code myself)
+* Nothing broke when running the generated tests as-is — all 33 passed on first run. Real
+  gaps only surfaced later, once I started testing inputs beyond the required 25 cases (see
+  the 2026-09-29 entry below).
 
-## Checklist for finding more real AI mistakes (do these yourself, then log what you find)
+## 2026-09-29: testing edge cases in the tokenizer
 
-* Read `test_15` against the assignment: case 15 as written gives the same result with or
-  without the parentheses under my precedence rules, so Claude added a second assertion.
-  Decide whether the test suite really proves what case 15 wants.
-* Try a few queries the tests do not cover (nested parentheses in conditions, `A times B times C`,
-  numbers like `3.5` and `-0`, a relation whose name is `select`) and log any wrong result
-  or bad error message.
-* Check every claim in GRAMMAR.md (for example the LL(1) claim in 5.4) against the parser code,
-  and log anything overstated.
-* Run `--stats` and confirm the join counter equals n*m in the benchmark; log if it does not.
+**Goal:** find real gaps by throwing unusual inputs at the tokenizer, since the required
+test cases all pass and don't reveal much on their own.
+
+**Where the AI was wrong (real, #2):** `select[Age>3.](R)` produces a "Syntax error:
+missing ']' ... found '.'" message. That's technically accurate — the number `3.` isn't
+valid (a decimal point needs at least one digit after it, so the tokenizer only consumes
+`3` and leaves the `.` as leftover) — but the message is misleading: it makes it sound like
+a missing bracket rather than a malformed number. A clearer message would flag the trailing
+decimal point directly. I found this by deliberately testing unusual-looking numbers, not
+from any of the 25 required cases.
+
+**Where the AI was wrong (real, #3):** `select[Age>--5](R)` fails with "Lexical error:
+unexpected character '-'". The real reason is that the grammar has no standalone unary minus
+operator — a `-` is only ever recognized as the start of a negative number literal, and only
+when a digit immediately follows it. Since the first `-` in `--5` is followed by another `-`,
+not a digit, it falls through every rule in the tokenizer and errors. The message is accurate
+but doesn't explain *why* — a reader has no way to guess "there's no unary minus" from
+"unexpected character". This is a genuine design gap (not just a bug): negative numbers can
+only appear as literals directly after a comparison operator, never as a general expression.
+I found this by testing a double-negative, which isn't covered by any required test case.
+
+**What broke / still open:** neither of these is fixed in the code — both are documented
+limitations now. Could improve the tokenizer's error messages to name the real problem
+(malformed number, or "no unary minus operator") instead of the generic message, but that's
+optional polish, not required by the spec.
+
+## Checklist used to find the entries above
+
+I worked through the suggested checklist (testing queries beyond the 25 required cases,
+checking error messages for accuracy, testing `--times--` on relations, and unusual number
+formats) to find the two extra AI mistakes logged on 2026-09-29.
